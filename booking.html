@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Premium Tour Booking</title>
+    <link rel="stylesheet" type="text/css" href="css/booking.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #141e30, #243b55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            width: 380px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        h1 {
+            color: #f8f9fa;
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+        h3 {
+            font-size: 16px;
+            margin-bottom: 12px 0 8px 0;
+        }
+        .textbox input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            margin-bottom: 10px;
+            outline: none;
+        }
+        .textbox input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .btn input {
+            width: 100%;
+            background: #ff9800;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.3s;
+        }
+        .btn input:hover {
+            background: #e68900;
+        }
+        .add-passenger {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+        .add-passenger:hover {
+            background: #218838;
+        }
+        .download-btn {
+            margin-top: 20px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .download-btn:hover {
+            background-color: #0069d9;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Store booking data globally
+        let bookingData = null;
+
+        function addPassenger() {
+            let container = document.getElementById("passenger-list");
+            let div = document.createElement("div");
+            div.className = "passenger-group";
+            div.innerHTML = `
+                <div class="textbox"><input type="text" placeholder="Passenger Name" name="passenger_name[]" required></div>
+                <div class="textbox"><input type="number" placeholder="Age" name="age[]" min="1" max="120" required></div>
+                <div class="textbox"><input type="tel" placeholder="Phone Number" name="phone[]" pattern="[0-9]{10}" required></div>
+            `;
+            container.appendChild(div);
+        }
+
+        function processForm(event) {
+            event.preventDefault();
+            
+            // Collect all form data
+            bookingData = {
+                location: document.querySelector('[name="location"]').value,
+                from: document.querySelector('[name="from"]').value,
+                to: document.querySelector('[name="to"]').value,
+                date: document.querySelector('[name="date"]').value,
+                payment_method: document.querySelector('[name="payment_method"]').value,
+                passengers: []
+            };
+
+            // Collect passenger data
+            const names = document.querySelectorAll('[name="passenger_name[]"]');
+            const ages = document.querySelectorAll('[name="age[]"]');
+            const phones = document.querySelectorAll('[name="phone[]"]');
+
+            names.forEach((name, index) => {
+                bookingData.passengers.push({
+                    name: name.value,
+                    age: ages[index].value,
+                    phone: phones[index].value
+                });
+            });
+
+            // Show success message
+            showSuccessMessage();
+        }
+
+        function showSuccessMessage() {
+            document.querySelector(".container").innerHTML = `
+                <h1>Thank You!</h1>
+                <p>Your Booking is Successful.</p>
+                <p>We appreciate your trust in us.</p>
+                <button onclick="downloadTicket()" class="download-btn">Download Ticket</button>
+            `;
+        }
+
+        async function downloadTicket() {
+            if (!bookingData) {
+                alert('No booking data found!');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Set up PDF document
+            doc.setFontSize(16);
+            doc.text("Premium Tour Booking Ticket", 105, 20, null, null, 'center');
+            
+            // Add company logo or header
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text("Premium Travel Experiences", 105, 30, null, null, 'center');
+            doc.setTextColor(0);
+            
+            // Add horizontal line
+            doc.line(20, 35, 190, 35);
+            
+            // Add booking details section
+            doc.setFontSize(14);
+            doc.text("Booking Details", 20, 45);
+            doc.setFontSize(12);
+            
+            doc.text(`Location: ${bookingData.location}`, 20, 55);
+            doc.text(`From: ${bookingData.from}`, 20, 65);
+            doc.text(`To: ${bookingData.to}`, 20, 75);
+            doc.text(`Date: ${new Date(bookingData.date).toLocaleDateString()}`, 20, 85);
+            doc.text(`Payment Method: ${formatPaymentMethod(bookingData.payment_method)}`, 20, 95);
+            doc.text("Total Cost: ₹10,000 (including GST)", 20, 105);
+            
+            // Add passenger details section
+            doc.setFontSize(14);
+            doc.text("Passenger Details", 20, 120);
+            doc.setFontSize(12);
+            
+            let yPos = 130;
+            bookingData.passengers.forEach((passenger, index) => {
+                doc.text(`${index+1}. ${passenger.name}, Age: ${passenger.age}, Phone: ${passenger.phone}`, 25, yPos);
+                yPos += 10;
+            });
+            
+            // Add footer
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text("Thank you for choosing our services!", 105, 280, null, null, 'center');
+            doc.text("For any queries, contact: support@premiumtours.com", 105, 285, null, null, 'center');
+            
+            // Save the PDF
+            doc.save(`Tour_Ticket_${bookingData.date}.pdf`);
+        }
+
+        function formatPaymentMethod(method) {
+            return method.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Premium Tour Booking</h1>
+        <form method="POST" id="bookingForm" onsubmit="processForm(event)">
+            <div class="textbox"><input type="text" placeholder="Package Location" name="location" required></div>
+            <div class="textbox"><input type="text" placeholder="From" name="from" required></div>
+            <div class="textbox"><input type="text" placeholder="To" name="to" required></div>
+            <div class="textbox"><input type="date" name="date" min="${new Date().toISOString().split('T')[0]}" required></div>
+            
+            <h3>Passenger Details</h3>
+            <div id="passenger-list"></div>
+            <button type="button" class="add-passenger" onclick="addPassenger()">Add Passenger</button>
+            
+            <h3>Total Cost (INR)</h3>
+            <div class="textbox"><input type="text" value="₹10,000 (including GST)" readonly></div>
+            
+            <h3>Payment</h3>
+            <div class="textbox">
+                <select name="payment_method" required>
+                    <option value="" disabled selected>Select Payment Method</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="debit_card">Debit Card</option>
+                    <option value="upi">UPI</option>
+                    <option value="net_banking">Net Banking</option>
+                </select>
+            </div>
+            
+            <div class="btn"><input type="submit" name="submit" value="Proceed to Payment"></div>
+        </form>
+    </div>
+    
+    <script>
+        // Add first passenger by default
+        window.onload = function() {
+            addPassenger();
+        };
+    </script>
+</body>
+</html>
