@@ -1,12 +1,15 @@
 <?php
+header('Content-Type: application/json'); // Ensures JSON response
+
 $db = new mysqli('localhost', 'root', '', 'travel', 3306);
 
 if ($db->connect_error) {
-    die(json_encode(["error" => "Database connection failed."]));
+    echo json_encode(["error" => "Database connection failed."]);
+    exit();
 }
 
 if (isset($_POST['query'])) {
-    $search = "%" . $_POST['query'] . "%"; // Partial match
+    $search = "%" . $_POST['query'] . "%"; // Allow partial matches
     $stmt = $db->prepare("SELECT pname FROM information WHERE pname LIKE ?");
     $stmt->bind_param("s", $search);
     $stmt->execute();
@@ -18,5 +21,6 @@ if (isset($_POST['query'])) {
     }
 
     echo json_encode($output);
+    exit();
 }
 ?>
